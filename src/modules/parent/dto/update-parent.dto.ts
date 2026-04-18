@@ -1,4 +1,9 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateParentDto } from './create-parent.dto';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNumber, IsOptional } from 'class-validator';
 
-export class UpdateParentDto extends PartialType(CreateParentDto) {}
+export class UpdateParentDto {
+  @ApiPropertyOptional({ example: 12 })
+  @IsNumber()
+  @IsOptional()
+  studentId?: number;
+}

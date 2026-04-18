@@ -4,11 +4,16 @@ import {
   Body,
   Get,
   Param,
+  Patch,
+  Delete,
   UseGuards,
   Req,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { StudentsService } from './student.service';
 import { CreateStudentDto } from './dto/create-student.dto';
+import { UpdateStudentDto } from './dto/update-student.dto';
+import { CreateUserDto } from 'src/modules/users/dto/create-user.dto';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { AccessRoles } from 'src/common/decorators/roles.decorator';
@@ -19,9 +24,20 @@ import { UserRole } from 'src/common/enums/role.enum';
 export class StudentsController {
   constructor(private readonly studentsService: StudentsService) {}
 
+  // Bir API call bilan user+student yaratish (asosiy endpoint)
   @Post()
   @AccessRoles(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.TEACHER)
-  create(@Body() dto: CreateStudentDto) {
+  create(
+    @Body('user') userDto: CreateUserDto,
+    @Body('student') studentDto: Omit<CreateStudentDto, 'userId'>,
+  ) {
+    return this.studentsService.createWithUser(userDto, studentDto);
+  }
+
+  // Mavjud user uchun student profil qo'shish
+  @Post('link-user')
+  @AccessRoles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  linkUser(@Body() dto: CreateStudentDto) {
     return this.studentsService.create(dto);
   }
 
@@ -33,7 +49,19 @@ export class StudentsController {
 
   @Get(':id')
   @AccessRoles(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.TEACHER, UserRole.SUPPORT)
-  findOne(@Param('id') id: number) {
-    return this.studentsService.findOneById(id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.studentsService.findOne(id);
+  }
+
+  @Patch(':id')
+  @AccessRoles(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.TEACHER)
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateStudentDto) {
+    return this.studentsService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @AccessRoles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.studentsService.remove(id);
   }
 }

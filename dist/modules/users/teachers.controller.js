@@ -1,0 +1,106 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TeachersController = void 0;
+const common_1 = require("@nestjs/common");
+const users_service_1 = require("./users.service");
+const teachers_service_1 = require("./teachers.service");
+const create_user_dto_1 = require("./dto/create-user.dto");
+const update_user_dto_1 = require("./dto/update-user.dto");
+const role_enum_1 = require("../../common/enums/role.enum");
+const roles_decorator_1 = require("../../common/decorators/roles.decorator");
+const auth_guard_1 = require("../../common/guards/auth.guard");
+const roles_guard_1 = require("../../common/guards/roles.guard");
+let TeachersController = class TeachersController {
+    usersService;
+    teachersService;
+    constructor(usersService, teachersService) {
+        this.usersService = usersService;
+        this.teachersService = teachersService;
+    }
+    create(dto) {
+        return this.usersService.createUser(dto, role_enum_1.UserRole.TEACHER);
+    }
+    findAll() {
+        return this.usersService.findAllByRole(role_enum_1.UserRole.TEACHER);
+    }
+    getMyGroups(req) {
+        return this.teachersService.getMyGroups(req.user.id);
+    }
+    findOne(id) {
+        return this.usersService.findOneByRole(id, role_enum_1.UserRole.TEACHER);
+    }
+    update(id, dto) {
+        return this.teachersService.update(id, dto);
+    }
+    remove(id) {
+        return this.teachersService.remove(id);
+    }
+};
+exports.TeachersController = TeachersController;
+__decorate([
+    (0, common_1.Post)(),
+    (0, roles_decorator_1.AccessRoles)(role_enum_1.UserRole.SUPERADMIN, role_enum_1.UserRole.ADMIN),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [create_user_dto_1.CreateUserDto]),
+    __metadata("design:returntype", void 0)
+], TeachersController.prototype, "create", null);
+__decorate([
+    (0, common_1.Get)(),
+    (0, roles_decorator_1.AccessRoles)(role_enum_1.UserRole.SUPERADMIN, role_enum_1.UserRole.ADMIN),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], TeachersController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('my-groups'),
+    (0, roles_decorator_1.AccessRoles)(role_enum_1.UserRole.TEACHER),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], TeachersController.prototype, "getMyGroups", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    (0, roles_decorator_1.AccessRoles)(role_enum_1.UserRole.SUPERADMIN, role_enum_1.UserRole.ADMIN),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", void 0)
+], TeachersController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Patch)(':id'),
+    (0, roles_decorator_1.AccessRoles)(role_enum_1.UserRole.SUPERADMIN, role_enum_1.UserRole.ADMIN),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, update_user_dto_1.UpdateUserDto]),
+    __metadata("design:returntype", void 0)
+], TeachersController.prototype, "update", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    (0, roles_decorator_1.AccessRoles)(role_enum_1.UserRole.SUPERADMIN, role_enum_1.UserRole.ADMIN),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", void 0)
+], TeachersController.prototype, "remove", null);
+exports.TeachersController = TeachersController = __decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard, roles_guard_1.RolesGuard),
+    (0, common_1.Controller)('teachers'),
+    __metadata("design:paramtypes", [users_service_1.UsersService,
+        teachers_service_1.TeachersService])
+], TeachersController);
+//# sourceMappingURL=teachers.controller.js.map

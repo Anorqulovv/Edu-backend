@@ -18,7 +18,6 @@ export class TelegramService implements OnModuleInit {
 
   onModuleInit() {
     this.setupCommands();
-    console.log('🤖 Telegram Bot (minimal) ishga tushdi — faqat elon va yo‘qlama xabarlari');
     this.bot.launch()
       .then(() => console.log('✅ Telegram Bot muvaffaqiyatli ishga tushdi!'))
       .catch(err => console.error('❌ Bot xatosi:', err.message));

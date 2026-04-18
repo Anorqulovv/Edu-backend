@@ -8,18 +8,13 @@ import { TelegramModule } from './modules/telegram/telegram.module';
 import { TestsModule } from './modules/tests/tests.module';
 import { UsersModule } from './modules/users/users.module';
 import { StudentsModule } from './modules/student/student.module';
-import { SupportModule } from './modules/support/support.module';
-import { envConfig } from './common/config';
-import { TeachersModule } from './modules/teacher/teacher.module';
 import { ParentsModule } from './modules/parent/parent.module';
-import { AdminsModule } from './admin/admin.module';
 import { DirectionModule } from './modules/directions/directions.module';
+import { envConfig } from './common/config';
+
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true, 
-    }),
-
+    ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: envConfig.DB_URL,
@@ -33,12 +28,8 @@ import { DirectionModule } from './modules/directions/directions.module';
     TestsModule,
     UsersModule,
     StudentsModule,
-    SupportModule,
-    TeachersModule,
     ParentsModule,
-    AdminsModule,
-    DirectionModule
+    DirectionModule,
   ],
-  
 })
 export class AppModule {}

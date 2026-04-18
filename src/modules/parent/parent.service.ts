@@ -1,40 +1,106 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Parent } from 'src/databases/entities/parent.entity';
-import { User } from 'src/databases/entities/user.entity';
 import { Student } from 'src/databases/entities/student.entity';
+import { User } from 'src/databases/entities/user.entity';
 import { CreateParentDto } from './dto/create-parent.dto';
-import { BaseService } from 'src/infrastructure/utils/BaseService';
+import { UpdateParentDto } from './dto/update-parent.dto';
+import { UsersService } from 'src/modules/users/users.service';
+import { UserRole } from 'src/common/enums/role.enum';
 import { succesRes } from 'src/infrastructure/utils/succes-res';
 import { ISucces } from 'src/infrastructure/utils/succes-interface';
-import { UserRole } from 'src/common/enums/role.enum';
+import { CreateUserDto } from 'src/modules/users/dto/create-user.dto';
 
 @Injectable()
-export class ParentsService extends BaseService<CreateParentDto, any, Parent> {
+export class ParentsService {
   constructor(
-    @InjectRepository(Parent) private parentRepo: Repository<Parent>,
-    @InjectRepository(User) private userRepo: Repository<User>,
-    @InjectRepository(Student) private studentRepo: Repository<Student>,
-  ) {
-    super(parentRepo);
+    @InjectRepository(Parent) private readonly parentRepo: Repository<Parent>,
+    @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+    private readonly usersService: UsersService,
+  ) { }
+
+  // ==================== CREATE ====================
+  // Bir API call bilan user+parent yaratish
+  async createWithUser(userDto: CreateUserDto): Promise<ISucces> {
+    const userResult = await this.usersService.createUser(userDto, UserRole.PARENT);
+    const newUser = userResult.data as any;
+
+    const parent = this.parentRepo.create({ userId: newUser.id });
+    const saved = await this.parentRepo.save(parent);
+    return succesRes({ user: newUser, parent: saved }, 201);
   }
 
+  // Mavjud user uchun parent profil qo'shish
   async create(dto: CreateParentDto): Promise<ISucces> {
-    const user = await this.userRepo.findOneBy({ id: dto.userId });
-    if (!user || user.role !== UserRole.PARENT) {
-      throw new NotFoundException('Parent user topilmadi');
-    }
+    const user = await this.usersService.getRepository.findOne({
+      where: { id: dto.userId, role: UserRole.PARENT },
+    });
+    if (!user) throw new NotFoundException('PARENT roli bilan user topilmadi');
+
+    const exists = await this.parentRepo.findOneBy({ userId: dto.userId });
+    if (exists) throw new ConflictException('Bu user uchun parent profil allaqachon mavjud');
 
     const parent = this.parentRepo.create(dto);
     const saved = await this.parentRepo.save(parent);
     return succesRes(saved, 201);
   }
 
-  async getMyChildren(parentUserId: number) {
-    return this.studentRepo.find({
-      where: { parent: { userId: parentUserId } },
-      relations: ['user', 'group'],
+  // ==================== READ ====================
+  async findAll(): Promise<ISucces> {
+    const parents = await this.parentRepo.find({
+      relations: ['user', 'students', 'students.user'],
+      order: { createdAt: 'DESC' },
     });
+    return succesRes(parents);
+  }
+
+  async findOne(id: number): Promise<ISucces> {
+    const parent = await this.parentRepo.findOne({
+      where: { id },
+      relations: ['user', 'students', 'students.group'],
+    });
+    if (!parent) throw new NotFoundException(`Parent ID ${id} topilmadi`);
+    return succesRes(parent);
+  }
+
+  async getMyChildren(parentUserId: number): Promise<ISucces> {
+    const children = await this.studentRepo.find({
+      where: { parent: { userId: parentUserId } },
+      relations: ['user', 'group', 'group.teacher'],
+      order: { createdAt: 'DESC' },
+    });
+    return succesRes(children);
+  }
+
+  // ==================== UPDATE ====================
+  async update(id: number, dto: UpdateParentDto): Promise<ISucces> {
+    const existing = await this.parentRepo.findOneBy({ id });
+    if (!existing) throw new NotFoundException(`Parent ID ${id} topilmadi`);
+
+    await this.parentRepo.update(id, dto as any);
+    const updated = await this.parentRepo.findOne({
+      where: { id },
+      relations: ['user', 'students'],
+    });
+    return succesRes(updated);
+  }
+
+  // ==================== DELETE ====================
+  async remove(id: number): Promise<ISucces> {
+    const existing = await this.parentRepo.findOne({
+      where: { id },
+      relations: ['students'],
+    });
+    if (!existing) throw new NotFoundException(`Parent ID ${id} topilmadi`);
+
+    if (existing.students?.length > 0) {
+      throw new ConflictException(
+        `Bu ota-ona ${existing.students.length} nafar o'quvchiga bog'langan. Avval bog'lanishlarni o'chiring.`,
+      );
+    }
+
+    await this.usersService.removeUser(existing.userId);
+    return succesRes({ message: 'Parent muvaffaqiyatli o\'chirildi' });
   }
 }

@@ -1,99 +1,125 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Edu Backend — NestJS
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Arxitektura
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Loyiha **bitta `UsersService`** orqali barcha rol-specific operatsiyalarni boshqaradi. Takrorlangan service/module yo'q.
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ npm install
+```
+src/modules/users/
+  users.service.ts        ← Markaziy servis (create, findByRole, update, delete)
+  teachers.service.ts     ← Faqat teacher-specific logika (guruh tekshirish)
+  dashboard.service.ts    ← Statistika (barcha repo)
+  users.controller.ts     ← SUPERADMIN: barcha userlar
+  admins.controller.ts    ← /admins  → ADMIN CRUD
+  teachers.controller.ts  ← /teachers → TEACHER CRUD
+  supports.controller.ts  ← /supports → SUPPORT CRUD
+  dto/create-user.dto.ts  ← Barcha rollar uchun umumiy DTO
+  dto/update-user.dto.ts  ← Barcha rollar uchun umumiy update DTO
 ```
 
-## Compile and run the project
+## API Endpointlar
 
-```bash
-# development
-$ npm run start
+### Auth
+| Method | URL | Description |
+|--------|-----|-------------|
+| POST | /auth/login | Tizimga kirish |
 
-# watch mode
-$ npm run start:dev
+### Users (SUPERADMIN only)
+| Method | URL | Description |
+|--------|-----|-------------|
+| GET | /users | Barcha userlar (role filter: ?role=ADMIN) |
+| GET | /users/:id | Bitta user |
+| DELETE | /users/:id | User o'chirish |
 
-# production mode
-$ npm run start:prod
+### Admins
+| Method | URL | Ruxsat |
+|--------|-----|--------|
+| POST | /admins | SUPERADMIN |
+| GET | /admins | SUPERADMIN, ADMIN |
+| GET | /admins/stats | SUPERADMIN, ADMIN |
+| GET | /admins/:id | SUPERADMIN, ADMIN |
+| PATCH | /admins/:id | SUPERADMIN |
+| DELETE | /admins/:id | SUPERADMIN |
+
+### Teachers
+| Method | URL | Ruxsat |
+|--------|-----|--------|
+| POST | /teachers | SUPERADMIN, ADMIN |
+| GET | /teachers | SUPERADMIN, ADMIN |
+| GET | /teachers/my-groups | TEACHER (o'z guruhlari) |
+| GET | /teachers/:id | SUPERADMIN, ADMIN |
+| PATCH | /teachers/:id | SUPERADMIN, ADMIN |
+| DELETE | /teachers/:id | SUPERADMIN, ADMIN |
+
+### Supports
+| Method | URL | Ruxsat |
+|--------|-----|--------|
+| POST | /supports | SUPERADMIN, ADMIN |
+| GET | /supports | SUPERADMIN, ADMIN |
+| GET | /supports/:id | SUPERADMIN, ADMIN |
+| PATCH | /supports/:id | SUPERADMIN, ADMIN |
+| DELETE | /supports/:id | SUPERADMIN, ADMIN |
+
+### Students
+| Method | URL | Ruxsat | Tavsif |
+|--------|-----|--------|--------|
+| POST | /students | SUPERADMIN, ADMIN, TEACHER | Body: `{ user: {...}, student: {...} }` |
+| POST | /students/link-user | SUPERADMIN, ADMIN | Mavjud userni student qilish |
+| GET | /students | SUPERADMIN, ADMIN, TEACHER, SUPPORT | Teacher faqat o'z guruhi |
+| GET | /students/:id | SUPERADMIN, ADMIN, TEACHER, SUPPORT | |
+| PATCH | /students/:id | SUPERADMIN, ADMIN, TEACHER | |
+| DELETE | /students/:id | SUPERADMIN, ADMIN | User ham o'chadi |
+
+### Parents
+| Method | URL | Ruxsat | Tavsif |
+|--------|-----|--------|--------|
+| POST | /parents | SUPERADMIN, ADMIN | Body: user ma'lumotlari (parent user+profil bir vaqtda) |
+| POST | /parents/link-user | SUPERADMIN, ADMIN | Mavjud userni parent qilish |
+| GET | /parents | SUPERADMIN, ADMIN, SUPPORT | |
+| GET | /parents/my-children | PARENT | O'z farzandlari |
+| GET | /parents/:id | SUPERADMIN, ADMIN, SUPPORT | |
+| PATCH | /parents/:id | SUPERADMIN, ADMIN | |
+| DELETE | /parents/:id | SUPERADMIN, ADMIN | User ham o'chadi |
+
+### Groups, Attendance, Tests, Directions
+Avvalgidek ishlaydi.
+
+## Student yaratish misoli
+
+```json
+POST /students
+{
+  "user": {
+    "fullName": "Alisher Karimov",
+    "username": "alisher_k",
+    "phone": "+998901234567",
+    "password": "password123"
+  },
+  "student": {
+    "cardId": "CARD001",
+    "groupId": 1
+  }
+}
 ```
 
-## Run tests
+## .env namunasi
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+```env
+DB_URL=postgresql://user:password@localhost:5432/edu_db
+JWT_SECRET=your_jwt_secret
+SUPERADMIN_USERNAME=superadmin
+SUPERADMIN_PHONE=+998901234567
+SUPERADMIN_PASSWORD=SuperPass123!
+TELEGRAM_BOT_TOKEN=your_token
 ```
 
-## Deployment
+## O'zgarishlar (Refactoring)
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
-# Edu-backend
+- ❌ `src/admin/` — o'chirildi → `src/modules/users/admins.controller.ts`
+- ❌ `src/modules/teacher/` — o'chirildi → `src/modules/users/teachers.controller.ts`
+- ❌ `src/modules/support/` — stub edi, o'chirildi → `src/modules/users/supports.controller.ts`
+- ✅ Bitta `UsersService` — barcha rol CRUD uchun markaziy manba
+- ✅ Bitta `CreateUserDto` / `UpdateUserDto` — takrorlangan DTOlar yo'q
+- ✅ Student va Parent: `createWithUser` — bir API call bilan user+profil
+- ✅ Student to'liq CRUD (oldin faqat create/read bor edi)
+- ✅ Support to'liq CRUD (oldin stub edi)
