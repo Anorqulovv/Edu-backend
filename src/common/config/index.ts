@@ -25,6 +25,12 @@ export const envConfig = {
         PASSWORD: String(process.env.SUPERADMIN_PASSWORD),
         SUPERADMIN_EMAIL: String(process.env.SUPERADMIN_EMAIL),
         PHONE: String(process.env.SUPERADMIN_PHONE),
+    },
+
+    AI: {
+        GEMINI_API_KEY: String(process.env.GEMINI_API_KEY || ''),
+        GEMINI_MODEL: String(process.env.GEMINI_MODEL || 'gemini-1.5-flash'),
+        AI_TEST_GENERATION_ENABLED: String(process.env.AI_TEST_GENERATION_ENABLED || 'false') === 'true',
     }
     
 }

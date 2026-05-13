@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login';
@@ -9,6 +9,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from 'src/databases/entities/user.entity';
+import { CryptoService } from 'src/infrastructure/helpers/Crypto';
 
 class OtpRequestDto {
   @ApiProperty({ example: '+998901234567' })
@@ -42,6 +43,18 @@ class UpdateProfileDto {
   @ApiPropertyOptional({ example: 'https://...' })
   @IsOptional() @IsString()
   avatar?: string;
+
+  @ApiPropertyOptional({ example: 'OldPassword123!' })
+  @IsOptional() @IsString()
+  oldPassword?: string;
+
+  @ApiPropertyOptional({ example: 'NewPassword123!' })
+  @IsOptional() @IsString()
+  newPassword?: string;
+
+  @ApiPropertyOptional({ example: 'NewPassword123!' })
+  @IsOptional() @IsString()
+  confirmPassword?: string;
 }
 
 @ApiTags('Auth')
@@ -51,6 +64,7 @@ export class AuthController {
     private readonly authService: AuthService,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly crypto: CryptoService,
   ) {}
 
   @Post('login')
@@ -88,13 +102,61 @@ export class AuthController {
   @Patch('profile')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "O'z profilini yangilash (avatar, fullName, username, phone)" })
+  @ApiOperation({ summary: "O'z profilini yangilash va parolni o'zgartirish" })
   async updateProfile(@Req() req: any, @Body() dto: UpdateProfileDto) {
-    await this.userRepo.update(req.user.id, dto);
+    const user = await this.userRepo.findOne({
+      where: { id: req.user.id },
+      relations: ['direction'],
+    });
+
+    if (!user) {
+      throw new BadRequestException('Foydalanuvchi topilmadi');
+    }
+
+    const {
+      oldPassword,
+      newPassword,
+      confirmPassword,
+      ...profileData
+    } = dto;
+
+    const updateData: Partial<User> = { ...profileData };
+
+    const wantsPasswordChange = Boolean(oldPassword || newPassword || confirmPassword);
+
+    if (wantsPasswordChange) {
+      if (!oldPassword || !newPassword || !confirmPassword) {
+        throw new BadRequestException("Parolni o'zgartirish uchun eski parol, yangi parol va tasdiqlash paroli kerak");
+      }
+
+      if (newPassword.length < 6) {
+        throw new BadRequestException("Yangi parol kamida 6 ta belgidan iborat bo'lishi kerak");
+      }
+
+      if (newPassword !== confirmPassword) {
+        throw new BadRequestException("Yangi parol va tasdiqlash paroli mos emas");
+      }
+
+      if (!user.password) {
+        throw new BadRequestException("Bu foydalanuvchida parol mavjud emas");
+      }
+
+      const isOldPasswordValid = await this.crypto.comparePassword(oldPassword, user.password);
+
+      if (!isOldPasswordValid) {
+        throw new BadRequestException("Eski parol noto'g'ri");
+      }
+
+      updateData.password = await this.crypto.hashPassword(newPassword);
+    }
+
+    await this.userRepo.update(req.user.id, updateData);
+
     const updated = await this.userRepo.findOne({
       where: { id: req.user.id },
       relations: ['direction'],
     });
+
     const { password: _, ...safe } = updated!;
     return succesRes(safe);
   }

@@ -1,6 +1,28 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsEnum, IsNumber, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsEnum, IsNumber, IsOptional, IsArray, ValidateNested, IsBoolean } from 'class-validator';
+import { Type } from 'class-transformer';
 import { TestType } from 'src/common/enums/test.enum';
+import { TestStatus } from 'src/common/enums/testStatus.enum';
+
+class CreateChoiceDto {
+  @IsString()
+  @IsNotEmpty()
+  text: string;
+
+  @IsBoolean()
+  isCorrect: boolean;
+}
+
+class CreateQuestionDto {
+  @IsString()
+  @IsNotEmpty()
+  text: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateChoiceDto)
+  choices: CreateChoiceDto[];
+}
 
 export class CreateTestDto {
   @ApiPropertyOptional({ example: 'Math test', description: 'Title' })
@@ -12,6 +34,11 @@ export class CreateTestDto {
   @IsEnum(TestType)
   @IsNotEmpty()
   type: TestType;
+
+  @ApiPropertyOptional({ example: 'ACTIVE', description: 'Test status' })
+  @IsEnum(TestStatus)
+  @IsOptional()
+  status?: TestStatus;
 
   @ApiPropertyOptional({ example: 60, description: 'Minimum score' })
   @IsNumber()
@@ -27,4 +54,26 @@ export class CreateTestDto {
   @IsNumber()
   @IsOptional()
   groupId?: number;
+
+  @ApiPropertyOptional({ example: 1, description: 'Dars raqami 1-12' })
+  @IsNumber()
+  @IsOptional()
+  lessonNumber?: number;
+
+  @ApiPropertyOptional({ example: 1, description: 'Hafta raqami 1-4' })
+  @IsNumber()
+  @IsOptional()
+  weekNumber?: number;
+
+  @ApiPropertyOptional({ example: 1, description: 'Oy/modul raqami' })
+  @IsNumber()
+  @IsOptional()
+  monthNumber?: number;
+
+  @ApiPropertyOptional({ description: 'Test savollari' })
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CreateQuestionDto)
+  questions?: CreateQuestionDto[];
 }

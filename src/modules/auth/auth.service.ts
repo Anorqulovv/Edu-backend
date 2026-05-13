@@ -26,7 +26,7 @@ export class AuthService {
     const user = await this.userRepo.findOne({ where: { username } });
 
     if (!user || !user.password) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Login yoki parol xato');
     }
 
     if (!user.isActive) {
@@ -35,7 +35,7 @@ export class AuthService {
 
     const isMatch = await this.crypto.comparePassword(password, user.password);
     if (!isMatch) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Login yoki parol xato');
     }
 
     const payload = {

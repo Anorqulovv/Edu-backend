@@ -9,6 +9,7 @@ import {
   UseGuards,
   Req,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 
 import { TestsService } from './tests.service';
@@ -21,16 +22,68 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { AccessRoles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../common/enums/role.enum';
 import { SubmitTestDto } from './dto/submit-test.dto';
+import { GenerateMonthlyTestsDto } from './dto/generate-monthly-tests.dto';
+import { CreateBankQuestionDto } from './dto/create-bank-question.dto';
+import { AiGenerateTestDto } from './dto/ai-generate-test.dto';
+import { TestType } from '../../common/enums/test.enum';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Controller('tests')
 export class TestsController {
   constructor(private readonly testsService: TestsService) { }
 
+
+  @Post('bank/questions')
+  @AccessRoles(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.TEACHER)
+  createBankQuestion(@Body() dto: CreateBankQuestionDto) {
+    return this.testsService.createBankQuestion(dto);
+  }
+
+  @Get('bank/questions')
+  @AccessRoles(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.TEACHER)
+  getBankQuestions(
+    @Query('directionId') directionId?: string,
+    @Query('lessonNumber') lessonNumber?: string,
+    @Query('type') type?: TestType,
+  ) {
+    return this.testsService.getBankQuestions(
+      directionId ? Number(directionId) : undefined,
+      lessonNumber ? Number(lessonNumber) : undefined,
+      type,
+    );
+  }
+
   @Post()
   @AccessRoles(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.TEACHER)
   create(@Body() dto: CreateTestDto, @Req() req: any) {
     return this.testsService.create(dto, req.user);
+  }
+
+
+  @Post('generate-monthly-schedule')
+  @AccessRoles(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.TEACHER)
+  generateMonthlySchedule(@Body() dto: GenerateMonthlyTestsDto, @Req() req: any) {
+    return this.testsService.generateMonthlySchedule(dto, req.user);
+  }
+
+
+  @Post('ai-generate')
+  @AccessRoles(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.TEACHER)
+  aiGenerateTest(@Body() dto: AiGenerateTestDto, @Req() req: any) {
+    return this.testsService.aiGenerateTest(dto, req.user);
+  }
+
+
+  @Get('parent/children-analytics')
+  @AccessRoles(UserRole.PARENT)
+  getParentChildrenAnalytics(@Req() req: any) {
+    return this.testsService.getParentChildrenAnalytics(req.user);
+  }
+
+  @Get('student/:studentId/analytics')
+  @AccessRoles(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.TEACHER)
+  getStudentAnalytics(@Param('studentId', ParseIntPipe) studentId: number, @Req() req: any) {
+    return this.testsService.getStudentAnalytics(studentId, req.user);
   }
 
   @Post('submit')
